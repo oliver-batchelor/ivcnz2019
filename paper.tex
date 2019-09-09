@@ -12,6 +12,8 @@
 \usepackage{booktabs}
 \usepackage{adjustbox}
 \usepackage{enumitem}
+\usepackage{float}
+
 
 \usepackage{hyperref}
 \usepackage{multirow}
@@ -135,7 +137,10 @@ Email: \IEEEauthorrefmark{1}oliver.batchelor@canterbury.ac.nz,
 
 \begin{abstract}
 
-In this paper we discuss several aspects of an object detector used for the purpose of online training 
+
+In this paper we examine the properties of an object detector for the purpose of Verification Based Annotation, where annotation is performed by having machine annotations checked and verified (and corrected, in this work) by a human annotator. We present our approach to object detection, where with a few modifications from standard practice, an object detector \cite{Lin2017} can be robust, without a large degree of parameter tweaking, for training object detection incrementally in order to annotate a wide variety of small-scale datasets with a variety of image resolution and object size.
+
+Our approach is to use high resolution images, training on image crops (as opposed to the usual practice of resizing input images to a fixed resolution), and find this method successful, being more accurate and robust than down-scaling. A particular interest is the effect of localisation noise and systematic bias in annotations. We characterise the impact on object detection performance and compare to human levels, we find noise has a large impact especially with fewer training examples.
 
 \end{abstract}
 
@@ -144,8 +149,6 @@ verification, annotation, object detection, neural network, human-in-the-loop
 \end{IEEEkeywords}
 
 \section{Introduction}
-
-
 
 \begin{figure*}[htb]
 \centering
@@ -193,13 +196,14 @@ verification, annotation, object detection, neural network, human-in-the-loop
 \label{fig:datasets_all}
 \end{figure*}
 
-In this paper we examine the properties of an object detector for the purpose of Verification Based Annotation (VBA), where annotation is performed by having machine annotations checked and verified (and corrected, in this work) by a human annotator. \gls{VBA} is a form of \emph{Human-in-the-loop} machine learning, a collaboration between a machine learning algorithm and a human user. The goal, where it relates to image annotation, is to make the most effective use of annotator time and reduce cognitive load. Human-in-the-loop approaches can offer improved engagement in activities that would otherwise be laborious. 
+Verification Based Annotation (VBA) is a form of \emph{Human-in-the-loop} machine learning, a collaboration between machine and human.  Human-in-the-loop approaches can offer improved engagement in activities that would otherwise be a laborious task. In \gls{VBA} algorithms machine annotations are verified by a human annotator, examples include question answering \cite{Papadopoulos2016}, semi-automatic segmentation \cite{Castrejon2017}, or as in this work modifying machine predictions \cite{Yao2012, Russakovsky2015a, McNeill2011}. 
 
-Although the idea has played a central role in many previous works, it is not given an easily recognisable term to distinguish it from other kinds of human-in-the-loop machine learning methods such as active learning and is often conflated. A selection of verification based methods include \cite{Yao2012, McNeill2011, Adhikaria2018, Castrejon2017, Papadopoulos2016, Russakovsky2015a}. 
+In this paper we examine the properties of an object detector used as part of a \gls{VBA} process. We are most interested in the robustness to varying parameters, such as image size, number and size of objects, and to initialisation. The ability to learn incrementally is key (and in particular, learn from a minimal number of examples). 
 
-Machine learning datasets often contain a lot of so-called \emph{easy} examples. These examples often dominate both the annotation process, where human time is spent needlessly annotating similar easy examples, and the learning process where the learning algorithm spends much of its computation time on examples that are already well handled. 
 
-Human-in-the-loop machine learning includes a variety of methods. Examples include Active Learning, where an algorithm asks a human to label only the most uncertain examples, \gls{VBA} using the idea that a human annotator can recognise the correct annotation faster than manually inputting it, and \emph{interactive machine learning} where human input can be used by a machine learning algorithm to direct it, or provide hints. 
+\subsection{Verification Based Annotation}
+
+\gls{VBA} is a form of \emph{Human-in-the-loop} machine learning, a collaboration between a machine learning algorithm and a human user. The goal, where it relates to image annotation, is to make the most effective use of annotator time and reduce cognitive load.
 
 Verification also plays a large part in ensuring consistency between human annotators in crowdsourcing efforts \cite{Su2012a}. The annotations of any one user cannot be fully trusted, and there can be significant variation between annotators. Often large organisations gamify the annotation process by having users annotate and verify labels as part of a proof-of-human process \cite{von2008recaptcha}.
 
@@ -207,7 +211,9 @@ Weaker algorithms (machine learning or otherwise) can be used to generate propos
 
 Human verification is fast; in \cite{Papadopoulos2016}, a yes/no verification is reported as taking 1.6 seconds on average. For a full annotation of a \gls{ILSVRC} image, in \cite{Su2012a} the time to draw a bounding box is reported at 26 seconds (42 seconds after quality control), but \cite{Papadopoulos2017} reports only 7 seconds per box using a more effective input method involving clicking extremities of objects rather than selecting corners. 
 
-\section {Object detection}
+\section {Setup and Method}
+\subsection {Object detection}
+
 
 \begin{table*}[thb]
 \centering
@@ -239,8 +245,7 @@ $penguin\:survey$ & 13210       & 352    & $22.6 \pm 2.11$ & $406\times405$ -- $
 \end{threeparttable}
 \end{table*}
 
-
-The object detector is based on a single-shot \gls{CNN} detector called RetinaNet \cite{Lin2017}, which was selected for its simplicity and efficiency, while having close to state-of-the-art accuracy. The proposed  differences from the method in \cite{Lin2017} and brief motivations for each are:
+The object detector is based on a single-shot \gls{CNN} detector called RetinaNet \cite{Lin2017}, an anchor-box based single stage object detector. This detector was selected for its simplicity and efficiency, while having close to state-of-the-art accuracy. Some modifications from the method in \cite{Lin2017} and brief motivations for each are:
 
 \begin{itemize}
     \item {\textbf {Sharing}}\par No shared weights between classification sub-networks at different pyramid levels, in order to make training much faster at the beginning.
@@ -248,20 +253,22 @@ The object detector is based on a single-shot \gls{CNN} detector called RetinaNe
     We do not normalise of the loss function (by the number of anchor matches), in order to accommodate images with no positive annotations.
     \item {\textbf {High resolution}}\par We train on crops of of high-resolution images, but for inference operate on complete images. The motivation is to make the object detection task as easy as possible; larger objects are easier to detect \cite{Lin2014}. 
     \item {\textbf {Cyclical learning rates}}\par We use of cyclical learning rates in training, to accommodate incremental additions to the training set.
+    \item {\textbf{Extra decoder layers}}\par We used an extra residual blocks in order to combine shortcut connections after concatenation with features from lower resolutions.
 \end{itemize}
 
-Each is described in more detail later in this paper, we test some of the hypotheses which led to these decisions. Additionally, we present a study on how localisation noise and systematic error impacts training. The tolerance to localisation error (as well as the ability of the object detector to accurately localise objects) is crucial to how efficient a \gls{VBA} system can be.
+We test some of the hypotheses which led to these decisions. Additionally, we present a study on how localisation noise and systematic error impacts training. The tolerance to localisation error (as well as the ability of the object detector to accurately localise objects) is crucial to how efficient a \gls{VBA} system can be.
 
-\section{Datasets}
+\subsection{Metrics}
 
+We use \gls{AP} at different levels of \gls{IOU} threshold for evaluation, this is the \gls{AP} across all examples and not a \gls{mAP}, (largely academic because most datasets here are single class). $AP_{COCO}$ is defined as the mean of $AP_t$ for $t \in [0.5, 0.55..0.95]$.
+
+\subsection{Datasets}
+
+A selection of images of the datasets and typical annotations used in this paper can be seen in in Figure~\ref{fig:datasets_all}, and a summary of the different variations can be seen in Table~\ref{tab:resolutions}, most of the datasets were annotated by the author, a few annotated by third parties and one was annotated by both. The datasets used span a wide variety of image resolutions, and object sizes; the images in some cases are reduced resolution from the captured images, in other cases reducing the resolution would make object detection impossible.
+
+A selection of the datasets with images and annotations (as well as annotation history logs) can be found at \href{http://academictorrents.com/details/e780e1a9e898e53e72c16cb5fcc6d61d90cc4d27}{Annotated object detection datasets}. 
 
 \section{High resolution inference}
-
-\subsection {Background}
-
-In \cite{Ruzicka2018} detecting objects in high-resolution images is also found to be very beneficial. They use an attention mechanism first to find areas of interest, then crop overlapping pieces (in a grid) from the high-resolution images for final object detection. Accuracy is improved from 33.6 $AP_{50}$ to 75.4 $AP_{50}$ on one of their internal datasets when comparing the detections from a single down-sampled image to their high-resolution evaluation method.
-
-\subsection {Method}
 
 We looked at two different possibilities for performing inference on a full-resolution image using an object detector network trained only on crops of images: (a) pass in the full image using the property that the network is \emph{fully convolutional} and (b) tile images the same size as training crops and collapse the predictions using a combined \gls{NMS}. Wen order to facilitate this idea, the box annotations on the edge of images are estimates of the full bounds of the object, and the anchor boxes are not cropped to the edge of the image. Wen \cite{Duarte2010}, the approach of annotating the estimated full bounding box (the approach we have taken) was compared to annotating just the visible parts (as is more common practice) in a pedestrian detector. Estimating the full bounds was a slight improvement, however, the fusion of both was found to be better than either one. 
 
@@ -277,20 +284,19 @@ Image size has its limits for both training and inference, as the complexity of 
 
 For this experiment we vary the scale and crop size to test the idea that an high-resolution object detector can be trained on small parts of images, then the whole image used in inference.
 
-\begin{figure}[htb]
-  \centering
-  \includegraphics[width=1.0\linewidth]{figures/crops_scales/penguins.pdf}
-  \caption{Comparison of training at different crop sizes and scales for $apples^1$ dataset. }  
+\begin{figure*}[htb]
+ \begin{subfigure}[t]{0.5\linewidth}
+  \includegraphics[width=1.0\linewidth]{figures/crops_scales/apples.pdf}
   \label{fig:apples_crop_scale}
-\end{figure}
-
- 
-\begin{figure}[htb]
+\end{subfigure}%
+ \begin{subfigure}[t]{0.5\linewidth}
   \centering
-  \includegraphics[width=1.0\linewidth]{figures/crops_scales/seals.pdf}
-  \caption{Comparison of training at different crop sizes and scales for \emph{seals} dataset. }  
-  \label{fig:seals_crop_scale}
-\end{figure}
+  \includegraphics[width=1.0\linewidth]{figures/crops_scales/scallops.pdf}
+  \label{fig:seals_crop_scale}  
+\end{subfigure}%
+  \caption{Comparison training at different crop sizes and scales for (a) $apples^1$ and (b) \emph{scallops} dataset. Crop size is presented as the crop size in the original image, the crop used for training is scaled by the given factor. } 
+\end{figure*}
+  
 
 
 \begin{table}[h!]
@@ -309,9 +315,9 @@ For this experiment we vary the scale and crop size to test the idea that an hig
 \label{tab:accuracy_scale_crop}
 \end{table}
 
-Full-resolution provides the best accuracy, although, in many of the datasets half-resolution provided almost the same accuracy while providing much faster training and inference. At half-resolution, an ensemble could be trained in a similar time to training one network at full-resolution and used to provide uncertainty measurements. On the other hand, as seen below in Section~\ref{sec:lr_schedule_exp}, the training accuracy is limited by the size of the dataset more than the training time. Training time is severely dependent on human annotation time, which will allow plenty of time for training at high-resolution.
+Full-resolution provides the best accuracy, although, in many of the datasets half-resolution provided almost the same accuracy while providing much faster training and inference. At half-resolution, an ensemble could be trained in a similar time to training one network at full-resolution and used to provide uncertainty measurements.
 
-The training speedup is measured, but note the figure for training time is just the training time, and excludes time for validation. Wet would be expected that halving the image resolution would halve the training time, but that figure is instead a speedup factor of $3.3$. The reason for that is that the images are loaded at full-resolution, so the bottleneck becomes the image loading and could be easily alleviated by resizing the images in advance.
+The training speedup is measured, but note the figure for training time is just the training time, and excludes time for validation. It would be expected that halving the image resolution would halve the training time, but that figure is instead a speedup factor of $3.3$. The reason for that is that the images are loaded at full-resolution, so the bottleneck becomes the image loading and could be easily alleviated by resizing the images in advance.
 
 \begin{table}[h!]
   \centering
@@ -343,11 +349,18 @@ Using a larger crop size proved more accurate in all of the four datasets, and u
 \end{figure}
 
 
-We compared the two methods (tiling vs inference on the full image) by using both methods for testing against the validation set of several different training runs. Wet can be seen in figure \ref{fig:inference_method} that both perform very similarly. Sometimes one is marginally better, and sometimes the other is marginally better, even within the same training run.
+We compared the two methods (tiling vs inference on the full image) by using both methods for testing against the validation set of several different training runs. It can be seen in figure \ref{fig:inference_method} that both perform very similarly. Sometimes one is marginally better, and sometimes the other is marginally better, even within the same training run.
 
 
 
 \section {Incremental training}
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=1.0\linewidth]{figures/incremental.pdf}
+  \caption{Incrementally adding examples vs. training with all examples from the beginning. Dotted lines are incremental training, solid lines are training with all examples up front. Grey lines at the bottom of each chart show the training loss.}  
+  \label{fig:incremental}
+\end{figure}
 
 When using the annotation tool, image annotations become available incrementally. Here we investigate the difference between training with all examples annotated up front compared to training with images added to the training set incrementally. 
 
@@ -355,12 +368,7 @@ During annotation, the validation set is incrementally built. Here we test again
 
 Figure~\ref{fig:incremental} shows the training plot for each dataset, where the validation accuracy ($AP_{COCO}$) is plotted against training time for both \emph{incremental} and \emph{full} cases. Different datasets improve at different rates with more data. However, all are restricted by the dataset size and improve with more data.
 
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=1.0\linewidth]{figures/incremental.pdf}
-  \caption{Incrementally adding examples vs. training with all examples from the beginning. Dotted lines are incremental training, solid lines are training with all examples up front. Grey lines at the bottom of each chart show the training loss.}  
-  \label{fig:incremental}
-\end{figure}
+
 
 \section{Effect of localisation noise}
 
@@ -369,19 +377,20 @@ In this experiment, we examine how tolerant the object detector is to two factor
 
 A \gls{VBA} based system by nature of using an object detector trained on noisy inputs, will therefore not produce entirely accurate localised predictions. The hope is that such a system will eventually produce localisations that are \emph{good enough}, in order that predictions from the object detector can be accepted without taking up valuable annotator time. Wen this experiment, we aim to quantify how noise degrades performance, and therefore establish some idea of what guideline for the level of precision is required during annotation.
 
-
-\subsection {Human threshold}
-
-Figure~\ref{fig:density_iou} shows in more detail the distribution of \gls{IOU} overlap for detections which have been modified. The density of transformed detections peaks at around $0.80$--$0.85$ depending on the dataset. It can be reasonably assumed that the real accuracy of the detections, which are used unmodified, would lie between that peak and $1.0$. Human annotation also has some degree of variability (reference \cite{Papadopoulos2017} gave a mean \gls{IOU} of 88 overlap for a box input method with Pascal VOC ground truth).
-
-One minus the peak density seems like a reasonable surrogate measure for the human verification threshold. From the datasets annotated in this thesis the \emph{penguins} dataset annotation has the lowest threshold, at approximately $0.15$, and as a result it seems likely the most precise localisation. For the \emph{penguin survey} the threshold is highest at around $0.35$. This makes sense, because counting was emphasised as opposed to precise annotation, so it is natural that the localisation threshold is higher. 
-
-\begin{figure}[h]
+\begin{figure}[!h]
 \centering
 \includegraphics[width=1.0\linewidth]{figures/iou_dataset.pdf}
 \caption{ Density plot of IoU overlap for detection with respect to annotation, for transformed detections. }
 \label{fig:density_iou}
 \end{figure}
+
+
+\subsection {Human threshold}
+
+
+Figure~\ref{fig:density_iou} shows in more detail the distribution of \gls{IOU} overlap for detections which have been modified. The density of transformed detections peaks at around $0.80$--$0.85$ depending on the dataset. It can be reasonably assumed that the real accuracy of the detections, which are used unmodified, would lie between that peak and $1.0$. Human annotation also has some degree of variability (reference \cite{Papadopoulos2017} gave a mean \gls{IOU} of 88 overlap for a box input method with Pascal VOC ground truth).
+
+One minus the peak density seems like a reasonable surrogate measure for the human verification threshold. From the datasets annotated in this thesis the \emph{penguins} dataset annotation has the lowest threshold, at approximately $0.15$, and as a result it seems likely the most precise localisation. For the \emph{penguin survey} the threshold is highest at around $0.35$. This makes sense, because counting was emphasised as opposed to precise annotation, so it is natural that the localisation threshold is higher. 
 
 
 \subsection{Method}
@@ -410,7 +419,7 @@ The object detector is trained for $40$ epochs in five different configurations 
 
 After noticing overfitting occurring in noisy cases, the set of experiments were repeated with reduced training data to examine how noise affected generalisation. We used two low training data scenarios, firstly at $25\%$ of training examples, then at $6.25\%$.
 
-The amount of noise and the resulting mean \gls{IOU}s with the original box can be seen visually in Figure~\ref{fig:noisy_training}. Wet can be seen that the levels of noise and systematic offset, both have approximately the same mean \gls{IOU}s with respect to the original boxes for the particular level of offset or bias.
+The amount of noise and the resulting mean \gls{IOU}s with the original box can be seen visually in Figure~\ref{fig:noisy_training}. It can be seen that the levels of noise and systematic offset, both have approximately the same mean \gls{IOU}s with respect to the original boxes for the particular level of offset or bias.
 
 \begin{figure}[ht]
 \centering
@@ -523,24 +532,22 @@ The amount of noise and the resulting mean \gls{IOU}s with the original box can 
 \end{table}
 
 
-The impact in terms of degradation of object detection performance can be seen in Table~\ref{tab:noise_table}, shown as the reduction in performance from the baseline zero noise and zero offset cases (shown as the absolute value, in bold). Two matching thresholds are shown, a relaxed matching threshold $AP_{50}$ and at strict matching threshold $AP_{75}$, which includes boxes which are closer to localisation error acceptable to human verification (see Section~\ref{sec:verification_threshold}). 
+The impact in terms of degradation of object detection performance can be seen in Table~\ref{tab:noise_table}, shown as the reduction in performance from the baseline zero noise and zero offset cases (shown as the absolute value, in bold). Two matching thresholds are shown, a relaxed matching threshold $AP_{50}$ and at strict matching threshold $AP_{75}$. 
 
-The object detector at a relaxed matching threshold $AP_{50}$ seems robust to a small amount of noise and systematic offset; less than $8\%$ offset or noise shows only a small impact on $AP_{50}$ degradation in each case, even in the low data scenarios. For the full amount of data, $AP_{50}$ is only degraded $10\%$ at $\sigma = 16\%, \Delta = 16\%$, yet in the same case $AP_{75}$ is reduced by $71\%$.
+The object detector at a relaxed matching threshold $AP_{50}$ is robust to a small amount of noise and systematic offset; less than $8\%$ offset or noise shows only a small impact on $AP_{50}$ degradation in each case, even in the low data scenarios. For the full amount of data, $AP_{50}$ is only degraded $10\%$ at $\sigma = 16\%, \Delta = 16\%$, yet in the same case $AP_{75}$ is reduced by $71\%$.
 
 For the full amount of training data, $AP_{75}$ is also robust to a small amount of noise or offset, roughly $2\%$ degradation of performance for $4\%$ noise or offset. Human variation of box annotation in \cite{Papadopoulos2017} was reported as a mean \gls{IOU} of 88, which corresponds to the noise case of $\sigma = 4\%$. At that noise level, performance degradation is minimal, even for a strict matching criterion, degrading $AP_{75}$ by around $2\%$. Keep in mind that these datasets were human annotated to begin with, so the noise added is extra noise.
 
 Sensitivity to noise and systematic offset is seen to increase significantly with less training data. At $\sigma=4\%$, a level of noise similar to a human annotator, $AP_{75}$ is degraded by $2.1\%$ at $100\%$ images, increasing to $6.1\%$ at $25\%$ images and $10.1\%$ at $6.25\%$ of the training images. This increased sensitivity can be seen across the range of noise and offset, and at $6.25\%$ of the images, $AP_{50}$ is degraded approximately double the amount compared to at $25\%$ of the images.
 
-Overfitting can be seen to occur at higher levels and offset in Figure~\ref{fig:noisy_training}, where the validation scores peak and start to degrade gradually with further training. The trajectory of validation accuracy can be seen to peak early and slowly fall off in the noisy cases for all three levels of training data, however in the low data scenarios, especially with only $6.25\%$ training examples, even a small amount of noise causes the accuracy to decline as training continues. Adding an offset seems to have a different effect, where accuracy is substantially degraded to begin with, but slowly improves with additional training.
-
-Noise at $\sigma = 32\%$ was much worse in all cases, but this can be considered a special case. Using a normally distributed scaling at high noise values such as $\sigma = 32\%$ was probably an incorrect choice, as it can result in boxes of significantly different aspect ratio to the original box. Adding noise to the corner positions may have been more appropriate at this high noise level.
-
-\subsection{Future work}
-
-An interesting aspect, a study for the future, would be to look at the fixed point where object detections are iterated in use with training. If an object detector is fed back its outputs, how does the error change over iterations depending on input noise? Does a systematic bias amplify itself with iteration? Then, study how error correction (for example from a \gls{VBA} system) is necessary to (a) break even, and (b) improve object detection performance. A user would complement these experiments by examining how much noise and bias propagate to final annotations.
-
 
 \section {Conclusions}
+
+We presented our approach to object detection for the purpose of Verification Based Annotation, where (with a few minor changes) an object detector \cite{Lin2017} can be robust, without a large degree of parameter tweaking, for object detection in a wide variety of domains with a variety of image resolution and object size.
+
+By training with image crops, a higher accuracy is possible using the full image resolution (at the expense of training time, however during annotation, time is plentiful). In each case, using larger crop sizes proved better, more accurate and more stable. Two high-resolution inference methods were were approximately equal, with the tiling approach allowing larger images at the expense of inference time. Incremental training was shown to be practical, with different datasets scaling in accuracy (and in time required for training) differently with the addition of extra images. 
+
+An investigation of the impact of annotation localisation noise and systematic error in box annotation show that training with many images is robust to a small amount of localisation error, however, with fewer images the sensitivity is much higher, leading to degradation of performance with even a small amount of noise; this suggests a focus on accurate object localisation is important, especially near the beginning of annotation, for both annotator and tool author.
 
 \section*{Acknowledgment}
 
