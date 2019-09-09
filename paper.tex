@@ -137,7 +137,7 @@ Email: \IEEEauthorrefmark{1}oliver.batchelor@canterbury.ac.nz,
 \begin{abstract}
 
 
-In this paper, we examine the properties of an object detector for Verification Based Annotation, where annotation is performed by having machine annotations checked and verified (and corrected, in this work) by a human annotator. We present our approach to object detection, where with a few modifications from standard practice, an object detector \cite{Lin2017} can be robust, without a large degree of parameter tweaking, for training object detection incrementally to annotate a wide variety of small-scale datasets with a variety of image resolution and object size.
+In this paper, we examine the properties of an object detector for Verification Based Annotation, where annotation is performed by having machine annotations checked and verified (and corrected, in this work) by a human annotator. We show that with a few modifications from standard practice, an object detector \cite{Lin2017} can be robust, without a large degree of parameter tweaking, for training object detection incrementally to annotate a wide variety of small-scale datasets with a variety of image resolution and object size.
 
 Our approach is to use high-resolution images, training on image crops (as opposed to the usual practice of resizing input images to a fixed resolution), and find this method successful, being more accurate and robust than down-scaling. A particular interest is the effect of localisation noise and systematic bias in annotations. We characterise the impact on object detection performance and compare to human levels, we find noise has a large impact, especially with fewer training examples.
 
