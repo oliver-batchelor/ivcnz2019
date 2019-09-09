@@ -259,13 +259,22 @@ We test some of the hypotheses which led to these decisions. Additionally, we pr
 
 \subsection{Metrics}
 
-We use \gls{AP} at different levels of \gls{IOU} threshold for evaluation, this is the \gls{AP} across all examples and not a \gls{mAP}, (largely academic because most datasets here are single class). $AP_{COCO}$ is defined as the mean of $AP_t$ for $t \in [0.5, 0.55..0.95]$.
+We use \gls{AP} at different levels of \gls{IOU} threshold for evaluation. This is the \gls{AP} across all examples and not a \gls{mAP} (largely academic because most datasets here are single class). This is notated $AP_{t}$ for \gls{IOU} threshold $t$. In particular two thresholds we use are $AP_{50}$ for a relaxed matching threshold and $AP_{75}$ for a strict threshold and then $AP_{COCO}$ for an average over a range of thresholds. $AP_{COCO}$ is defined as the mean of $AP_t$ for $t \in [0.5, 0.55..0.95]$.
+
+\subsection{Training parameters}
+
+In all experiments in this work I use a \gls{SGD} optimiser with the base learning rate set to $0.001$, momentum $0.9$ and weight decay $0.0001$ in all cases. Total loss is averaged across each mini-batch, and batch sizes of $8$ are used. The balance factor between localisation and classification loss is $\lambda=2.5$ in all cases. A cyclical learning rate is used during over each batch, with a log interpolated (geometric) multiplier reducing the learning rate by a factor of $0.1$ at the end of the batch. 
+
+Image augmentation is used, crops taken at varied scale (${3/4}$--${4/3}$) and aspect ratio ($\pm 10\%$), flips ($0.5$ probability). A range of photo-metric augmentations: brightness ($\pm 10\%$), contrast ($\pm 10\%$), gamma adjustment ($\pm 0.1\%$), hue ($\pm 5$) and saturation ($\pm 5$) adjustment.
+
+Code for this paper can be found \href{https://github.com/saulzar/detection/tree/thesis}{here}, under the tag ``thesis'', with details surrounding the cropping procedure, default training and augmentation parameters etc.
 
 \subsection{Datasets}
 
 A selection of images of the datasets and typical annotations used in this paper can be seen in Figure~\ref{fig:datasets_all} and a summary of the different variations can be seen in Table~\ref{tab:resolutions}, most of the datasets were annotated by the author, a few annotated by third parties and one was annotated by both. The datasets span a wide variety of image resolutions, and object sizes; the images in some cases are reduced resolution from the captured images, in other cases reducing the resolution would make object detection impossible.
 
 A selection of the datasets with images and annotations (as well as annotation history logs) can be found at \href{http://academictorrents.com/details/e780e1a9e898e53e72c16cb5fcc6d61d90cc4d27}{Annotated object detection datasets}. 
+
 
 \section{High resolution inference}
 
