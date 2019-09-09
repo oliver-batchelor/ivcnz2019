@@ -270,7 +270,7 @@ A selection of the datasets with images and annotations (as well as annotation h
 
 \section{High resolution inference}
 
-We looked at two different possibilities for performing inference on a full-resolution image using an object detector network trained only on crops of images: (a) pass in the full image using the property that the network is \emph{fully convolutional} and (b) tile images the same size as training crops and collapse the predictions using a combined \gls{NMS}. Wen order to facilitate this idea, the box annotations on the edge of images are estimates of the full bounds of the object, and the anchor boxes are not cropped to the edge of the image. Wen \cite{Duarte2010}, the approach of annotating the estimated full bounding box (the approach we have taken) was compared to annotating just the visible parts (as is more common practice) in a pedestrian detector. Estimating the full bounds was a slight improvement, however, the fusion of both was found to be better than either one. 
+We looked at two different possibilities for performing inference on a full-resolution image using an object detector network trained only on crops of images: (a) pass in the full image using the property that the network is \emph{fully convolutional} and (b) tile images the same size as training crops and collapse the predictions using a combined \gls{NMS}. In order to facilitate this idea, the box annotations on the edge of images are estimates of the full bounds of the object, and the anchor boxes are not cropped to the edge of the image. In \cite{Duarte2010}, the approach of annotating the estimated full bounding box (the approach we have taken) was compared to annotating just the visible parts (as is more common practice) in a pedestrian detector. Estimating the full bounds was a slight improvement, however, the fusion of both was found to be better than either one. 
 
 The first method is to pass in the full image to the neural network, even though it has only been trained on much smaller crops. Object detection networks are flexible and work across a range of input image resolutions. All layers are either convolutions or do not reshape the feature maps (aside from up/down-sampling). As a result, passing in a larger image results in a larger feature map and set of box outputs at each layer of the pyramid. The concern is that the up/down-sampling behaviour is slightly different for input sizes depending on if they are odd or even, relative to powers of two. We found this to be a legitimate concern, though largely negated if the training crop size is set to a power of two or multiple of a power of two. 
 
@@ -315,29 +315,7 @@ For this experiment we vary the scale and crop size to test the idea that an hig
 \label{tab:accuracy_scale_crop}
 \end{table}
 
-Full-resolution provides the best accuracy, although, in many of the datasets half-resolution provided almost the same accuracy while providing much faster training and inference. At half-resolution, an ensemble could be trained in a similar time to training one network at full-resolution and used to provide uncertainty measurements.
-
-The training speedup is measured, but note the figure for training time is just the training time, and excludes time for validation. It would be expected that halving the image resolution would halve the training time, but that figure is instead a speedup factor of $3.3$. The reason for that is that the images are loaded at full-resolution, so the bottleneck becomes the image loading and could be easily alleviated by resizing the images in advance.
-
-\begin{table}[h!]
-  \centering
-    \caption{Speedup associated with reduced resolution. Average across datasets (\emph{apples}, \emph{penguins}, \emph{scallops}, \emph{seals})  }
-  \begin{tabular}{ l l | l l l l}
-    & scale & 12.5 & 25 & 50 & 100 \\
-    \toprule
-       \multirow{2}{*}{\STAB{\rotatebox[origin=c]{90}{crop}}}
-
-        & 512   & 6.0  & 5.9  &  5.9  & 3.3 \\
-        & 768   & 5.9 & 5.3  &  4.4 &  1.7 \\
-        & 1024  & 5.9 & 4.5  &  3.3  & 1.0 \\
-    \bottomrule
-  \end{tabular}
-\label{tab:speed_scale_crop}
-\end{table}
-
-
-Using a larger crop size proved more accurate in all of the four datasets, and using a larger crop was beneficial in all cases, being more accurate and more stable to train. The larger size, however, trains much more slowly, so in an active learning system, it is possible to use the time savings for other things such as evaluating unseen images for example selection or training a set of several models to use as an ensemble.
-
+Using a larger crop size proved more accurate in all of the four datasets, and using a larger crop was beneficial in all cases, being more accurate and more stable to train. The larger size, however, trains much more slowly. In this case a factor of $3.3$ slower for half scale or half size crop, larger factors having less speedup due to constants such as loading the images. Despite the relatively low requirement for fast inference (to keep up with a single annotator); this could be used for example for image selection, to find images of most uncertainty for the purpose of active learning.
 
 \subsection {Inference method for large images}
 
@@ -364,7 +342,7 @@ We compared the two methods (tiling vs inference on the full image) by using bot
 
 When using the annotation tool, image annotations become available incrementally. Here we investigate the difference between training with all examples annotated up front compared to training with images added to the training set incrementally. 
 
-During annotation, the validation set is incrementally built. Here we test against the final validation sets. Wen future, it would be better to use cross-validation, in order to make better use of training data, and provide more accurate testing (at the expense of extra training time). 
+During annotation, the validation set is incrementally built. Here we test against the final validation sets. In future, it would be better to use cross-validation, in order to make better use of training data, and provide more accurate testing (at the expense of extra training time). 
 
 Figure~\ref{fig:incremental} shows the training plot for each dataset, where the validation accuracy ($AP_{COCO}$) is plotted against training time for both \emph{incremental} and \emph{full} cases. Different datasets improve at different rates with more data. However, all are restricted by the dataset size and improve with more data.
 
@@ -375,7 +353,7 @@ Figure~\ref{fig:incremental} shows the training plot for each dataset, where the
 
 In this experiment, we examine how tolerant the object detector is to two factors: (a) random noisy annotations, (b) systematic bias and combinations of the two. All human annotation contains a certain amount of noise as well as a bias which varies from person to person and activity to activity, so it is expected an object detector can tolerate a certain amount of labelling noise in its training data. 
 
-A \gls{VBA} based system by nature of using an object detector trained on noisy inputs, will therefore not produce entirely accurate localised predictions. The hope is that such a system will eventually produce localisations that are \emph{good enough}, in order that predictions from the object detector can be accepted without taking up valuable annotator time. Wen this experiment, we aim to quantify how noise degrades performance, and therefore establish some idea of what guideline for the level of precision is required during annotation.
+A \gls{VBA} based system by nature of using an object detector trained on noisy inputs, will therefore not produce entirely accurate localised predictions. The hope is that such a system will eventually produce localisations that are \emph{good enough}, in order that predictions from the object detector can be accepted without taking up valuable annotator time. In this experiment, we aim to quantify how noise degrades performance, and therefore establish some idea of what guideline for the level of precision is required during annotation.
 
 \begin{figure}[!h]
 \centering
