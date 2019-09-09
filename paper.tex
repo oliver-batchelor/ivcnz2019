@@ -247,12 +247,12 @@ $penguin\:survey$ & 13210       & 352    & $22.6 \pm 2.11$ & $406\times405$ -- $
 The object detector is based on a single-shot \gls{CNN} detector called RetinaNet \cite{Lin2017}, an anchor-box based single stage object detector. This detector was selected for its simplicity and efficiency while having close to state-of-the-art accuracy. Some modifications from the method in \cite{Lin2017} and brief motivations for each are:
 
 \begin{itemize}
-    \item {\textbf {Sharing}}\par No shared weights between classification sub-networks at different pyramid levels, to make training much faster at the beginning.
-    \item {\textbf {Non normalised loss}}\par 
+    \item {\textbf {Sharing}}: no shared weights between classification sub-networks at different pyramid levels, to make training much faster at the beginning.
+    \item {\textbf {Non normalised loss}}:
     We do not normalise of the loss function (by the number of anchor matches), to accommodate images with no positive annotations.
-    \item {\textbf {High resolution}}\par We train on crops of high-resolution images, but for inference operate on complete images. The motivation is to make the object detection task as easy as possible; larger objects are easier to detect \cite{Lin2014}. 
-    \item {\textbf {Cyclical learning rates}}\par We use of cyclical learning rates in training, to accommodate incremental additions to the training set.
-    \item {\textbf{Extra decoder layers}}\par We used an extra residual block at each resolution to combine shortcut connections after concatenation with features from lower resolutions.
+    \item {\textbf {High resolution}}: We train on crops of high-resolution images, but for inference operate on complete images. The motivation is to make the object detection task as easy as possible; larger objects are easier to detect \cite{Lin2014}. 
+    \item {\textbf {Cyclical learning rates}}: We use of cyclical learning rates in training, to accommodate incremental additions to the training set.
+    \item {\textbf{Extra decoder layers}}: We used an extra residual block at each resolution to combine shortcut connections after concatenation with features from lower resolutions.
 \end{itemize}
 
 We test some of the hypotheses which led to these decisions. Additionally, we present a study on how localisation noise and systematic error impacts training. The tolerance to localisation error (as well as the ability of the object detector to accurately localise objects) is crucial to how efficient a \gls{VBA} system can be.
@@ -267,13 +267,13 @@ In all experiments in this work I use a \gls{SGD} optimiser with the base learni
 
 Image augmentation is used, crops taken at varied scale (${3/4}$--${4/3}$) and aspect ratio ($\pm 10\%$), flips ($0.5$ probability). A range of photo-metric augmentations: brightness ($\pm 10\%$), contrast ($\pm 10\%$), gamma adjustment ($\pm 0.1\%$), hue ($\pm 5$) and saturation ($\pm 5$) adjustment.
 
-Code for this paper can be found \href{https://github.com/saulzar/detection/tree/thesis}{here}, under the tag ``thesis'', with details surrounding the cropping procedure, default training and augmentation parameters etc.
+Code for this paper can be found \href{https://github.com/saulzar/detection/tree/thesis}{link}, under the tag ``thesis'', with details surrounding the cropping procedure, default training and augmentation parameters etc.
 
 \subsection{Datasets}
 
 A selection of images of the datasets and typical annotations used in this paper can be seen in Figure~\ref{fig:datasets_all} and a summary of the different variations can be seen in Table~\ref{tab:resolutions}, most of the datasets were annotated by the author, a few annotated by third parties and one was annotated by both. The datasets span a wide variety of image resolutions, and object sizes; the images in some cases are reduced resolution from the captured images, in other cases reducing the resolution would make object detection impossible.
 
-A selection of the datasets with images and annotations (as well as annotation history logs) can be found at \href{http://academictorrents.com/details/e780e1a9e898e53e72c16cb5fcc6d61d90cc4d27}{Annotated object detection datasets}. 
+A selection of the datasets with images and annotations (as well as annotation history logs) can be found at \href{http://academictorrents.com/details/e780e1a9e898e53e72c16cb5fcc6d61d90cc4d27}{link}. 
 
 
 \section{High resolution inference}
